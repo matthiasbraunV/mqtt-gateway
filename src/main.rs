@@ -35,12 +35,12 @@ fn update_log_file_path(handle: &log4rs::Handle, mount_point: String) {
 
     let log_file_path: String;
     match get_usb_drive_path(&mount_point) {
-        Ok(log_path) => {
+        Some(log_path) => {
             log_file_path = log_path + "/mqtt-gateway.log";
             info!("log_file_path: {}", log_file_path);
         }
-        Err(e) => {
-            error!("Error getting usb drive path for log: {:?}", e);
+        None => {
+            error!("Error getting usb drive path for log");
             return;
         }
     }
@@ -109,15 +109,26 @@ fn load_mount_point_config(config: &str) -> String {
     return mount_point;
 }
 
-fn get_usb_drive_path(usb_drive: &str) -> Result<String, std::io::Error> {
+fn get_usb_drive_path(usb_drive: &str) -> Option<String> {
     let mut usb_drive_path = PathBuf::new();
 
     usb_drive_path = Path::new(usb_drive).to_path_buf();
 
-    let dir = fs::read_dir(usb_drive_path.clone())?.next().unwrap()?;
-    usb_drive_path = usb_drive_path.join(dir.path());
+    match fs::read_dir(usb_drive_path.clone()) {
+        Ok(mut dir_) => {
+            match dir_.next() {
+                Some(dir) => usb_drive_path = usb_drive_path.join(dir.unwrap().path()),
+                None => return None,
+            }
+            //usb_drive_path = usb_drive_path.join(dir.path());
+        }
+        Err(_) => return None,
+    }
 
-    return Ok(usb_drive_path.display().to_string());
+    //?.next().unwrap()?{}
+    //usb_drive_path = usb_drive_path.join(dir.path());
+
+    return Some(usb_drive_path.display().to_string());
 }
 
 /// Inserts `value` to the table `table_name` in the passed database path. Creates the table if it does not yet exist.
@@ -138,11 +149,11 @@ fn write_value_to_database(value: f64, mount_point: &str, table_name: String, cl
         return;
     }
     match get_usb_drive_path(mount_point) {
-        Ok(db_path) => {
+        Some(db_path) => {
             let db_file_path = db_path + "/" + client_id + ".db";
             insert_value_to_table(value, table_name, &db_file_path);
         }
-        Err(e) => error!("Error getting usb drive path for DB: {:?}", e),
+        None => error!("Error getting usb drive path for DB"),
     }
 }
 
