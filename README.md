@@ -32,3 +32,12 @@ The main features of the mqtt-gateway are:
 ### Build for Raspberry-Pi Zero using Cross
 Install docker engine and [cross](https://github.com/cross-rs/cross).\
 Use command  `cross run --target arm-unknown-linux-gnueabihf` to build for Raspberry Pi Zero target.
+
+
+### Start mqtt-gateway with cornjob
+To ensure running of the mqtt-gateway the helper script `mqtt_gateway_keepalive.sh` can be executed regularly in a crontjob with command `crontab -e`, e.g.:
+```
+# run script every minute
+
+* * * * * /home/mqtt-gateway/mqtt_gateway_keepalive.sh
+```
